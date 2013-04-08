@@ -1,0 +1,148 @@
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Python IDE</title>
+    <link rel="stylesheet" href="lib/codemirror.css">
+    <script type="text/javascript" src="http://bwasti.andrew.cmu.edu:7069/socket.io/socket.io.js">    </script>
+
+    <script src="lib/codemirror.js"></script>
+    <script src="addon/edit/matchbrackets.js"></script>
+    <script src="mode/python/python.js"></script>
+		<script src="skulpt.js" type="text/javascript"></script>
+		<script src="builtin.js" type="text/javascript"></script>
+
+    <link rel="stylesheet" href="doc/docs.css">
+    <style type="text/css">
+			.CodeMirror {
+				border-top: 1px solid black; border-bottom: 1px solid black;
+				}
+			h3 {
+				font-family: 'HelveticaNeue-UltraLight', 'Helvetica Neue UltraLight', 'Helvetica Neue', Arial, Helvetica, sans-serif;
+				text-align:center;
+				
+			}
+			body{
+				background:grey;
+				font-family: 'HelveticaNeue-UltraLight', 'Helvetica Neue UltraLight', 'Helvetica Neue', Arial, Helvetica, sans-serif;
+			}
+			pre{
+				width:document.width-30;
+			}
+			button {
+			    padding: 10px 15px;
+			   background: #696969;
+			    color: #FFF;
+					-webkit-border-radius: 3px;
+			    -moz-border-radius: 3px;
+			    border-radius: 3px;
+			    border: solid 1px #8f8f8f;
+			    text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.4);
+			    -webkit-box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4), 0 1px 1px rgba(0, 0, 0, 0.2);
+			    -moz-box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4), 0 1px 1px rgba(0, 0, 0, 0.2);
+			    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4), 0 1px 1px rgba(0, 0, 0, 0.2);
+			}
+			button:hover, button:focus {
+		   background: #383838;
+			    border: solid 1px #8f8f8f;
+			    text-decoration: none;
+					-webkit-transition-duration: 0.2s;
+			    -moz-transition-duration: 0.2s;
+			    transition-duration: 0.2s;
+			}
+			button:active {
+			    -webkit-box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.6);
+			    -moz-box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.6);
+			    box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.6);
+			   background: #292929;
+			    border: solid 1px #8f8f8f;
+			}
+
+		</style>
+  </head>
+  <body>   
+	 	<h3>Python Editor</h3>
+    <div><textarea id="code" name="code"></textarea></div>
+    <script>
+      var editor = CodeMirror.fromTextArea(document.getElementById("code"), {
+        mode: {name: "python",
+               version: 2,
+               singleLineStringErrors: false},
+        lineNumbers: true,
+        indentUnit: 4,
+        tabMode: "shift",
+        matchBrackets: true,
+
+      });
+			var socket = io.connect('bwasti.andrew.cmu.edu:7069');
+			socket.on('server', function (data) {
+				var pos = editor.getCursor();
+				//console.log(data.code);
+				//console.log(codeArea.value);
+				editor.setValue(data.code);
+				/*
+				var end = data.pos;
+				end.ch+=1;
+				editor.replaceRange(data.code,data.pos,end)*/
+				editor.setCursor(pos);
+			});
+
+			document.onkeyup = function(event){
+				/*var startSend = editor.getCursor();
+				startSend.ch-=1;
+				var endSend = editor.getCursor();
+				var currCode = editor.getRange(startSend,endSend);
+				if ((event.which <= 40 && event.which >= 16)
+					|| event.keyCode <= 40 && event.keyCode >= 16)
+				{
+					return false;
+				}
+				else if (event.which == 13 || event.keyCode == 13)
+				{
+					socket.emit('client', {code:"\n", pos:startSend});
+					return false;
+				}
+				else if (event.which == 8 || event.keyCode == 8)
+				{
+					socket.emit('client', {code:"", pos:startSend});
+					return false;
+				}
+
+				socket.emit('client', {
+					code: currCode, pos:startSend});
+
+				console.log(editor.getRange(startSend,editor.getCursor()));
+				*/
+				socket.emit('client', {
+					code: editor.getValue()});
+			};
+			function outf(text)
+	    {
+	        var output = document.getElementById("output");
+	        text = text.replace(/</g, '&lt;');
+	        output.innerHTML = output.innerHTML + text;
+	    }
+			function runCode() {
+        var prog = editor.getValue();
+        var output = document.getElementById("output");
+        output.innerHTML = '';
+        Sk.configure({output:outf});
+        try {
+            var module = Sk.importMainWithBody("<stdin>", false, prog);
+            var obj = module.tp$getattr('a');
+            var runMethod = obj.tp$getattr('run');
+            var ret = Sk.misceval.callsim(runMethod, 10);
+            outf(ret);
+						alert(ret);
+        } catch (e) {
+						outf(e);
+            //alert(e);
+        }
+
+			};
+
+    </script>
+		<button onclick="runCode()"> Run </button>
+		<pre id="output"></pre>
+		This is a collaborative Python Editor that utilizes Skulpt, CodeMirror, Node.js and Socket.io
+  </body>
+</html>
